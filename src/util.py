@@ -53,9 +53,23 @@ TARGET_COLUMN = "cnt"
 # 1. DATA LOADING & EXPLORATORY DATA ANALYSIS (EDA)
 # =============================================================================
 
+def save_json(data: dict[str, Any], path: Path) -> None:
+    """Save a dictionary as formatted JSON."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2, default=str)
+
+
 def get_data_path(filename: str = "day.csv") -> Path:
     """Return absolute path to a dataset file."""
     return DATA_DIR / filename
+
+def ensure_output_dirs() -> None:
+    """Create output directories if they do not exist."""
+    for directory in (FIGURES_DIR, METRICS_DIR, REPORTS_DIR, MODELS_DIR):
+        directory.mkdir(parents=True, exist_ok=True)
+
+
 
 def load_and_explore_data(path:Path | None= None) -> pd.DataFrame:
     """Loads dataset and prints essential EDA metrics."""
@@ -66,11 +80,11 @@ def load_and_explore_data(path:Path | None= None) -> pd.DataFrame:
     data_path= path or get_data_path()
     df = pd.read_csv(data_path)
     print(f"Dataset Shape: {df.shape[0]} rows, {df.shape[1]} columns")
-    print("\nMissing Values Count per Column:")
-    print(df.isnull().sum())
+    # print("\nMissing Values Count per Column:")
+    # print(df.isnull().sum())
     
-    print("\nStatistical Summary:")
-    print(df.describe().T[["mean", "std", "min", "50%", "max"]])
+    # print("\nStatistical Summary:")
+    # print(df.describe().T[["mean", "std", "min", "50%", "max"]])
     
     return df
 

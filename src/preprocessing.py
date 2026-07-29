@@ -62,16 +62,28 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     return cleaned
 
 
-def get_feature_columns(df: pd.DataFrame)->pd.DataFrame:
+
+
+def get_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
+    """
+    Split dataframe columns into numeric and categorical feature lists.
+
+    Excludes target column.
+    """
+    feature_cols = [c for c in df.columns if c != TARGET_COLUMN]
     
-    # Drop leakage and identifier features
-    # 'casual' + 'registered' == 'cnt', which causes strict data leakage
-    # features_to_drop = ["instant", "dteday", "casual", "registered"]
+    numeric_features = df[feature_cols].select_dtypes(include=[np.number]).columns.tolist()
+    categorical_features = [
+        c for c in feature_cols if c not in numeric_features
+    ]
 
-    features_to_drop = ["instant", "dteday", "casual", "registered"]
-    cleaned_df = df.drop(columns=[col for col in features_to_drop if col in df.columns])
+    print("******from get_features_columns********")
+    print(feature_cols)
+    print(numeric_features)
+    print(categorical_features)
 
-    return cleaned_df
+    return numeric_features, categorical_features
+
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -88,38 +100,52 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     cleaned = remove_duplicates(cleaned)
 
-    # cleaned=  get_feature_columns (cleaned)
-
     return cleaned
 
-
-# =============================================================================
-# 2. DATA PREPROCESSING (Split train/test)
-# =============================================================================
-def preprocess_data(df: pd.DataFrame):
+def build_preprocessor(
+    numeric_features: list[str],
+    categorical_features: list[str],
+    scale_numeric: bool = True,
+) -> ColumnTransformer:
     """
-    Cleans data, handles potential leakage columns ('casual', 'registered'),
-    removes identifiers, and splits data into train/test sets.
-    """
-    print("\n" + "=" * 60)
-    print("STEP 2: PREPROCESSING & FEATURE SELECTION")
-    print("=" * 60)
-    
-    
-    cleaned_df = df
+    Build sklearn ColumnTransformer with imputation, scaling, and one-hot encoding.
 
-    # Training file
-    # Feature & Target separation
-    X = cleaned_df.drop(columns=["cnt"])
-    y = cleaned_df["cnt"]
-    
-    # Train / Test split (80% Train, 20% Test)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+    Parameters
+    ----------
+    numeric_features : list[str]
+        Numeric column names.
+    categorical_features : list[str]
+        Categorical column names.
+    scale_numeric : bool
+        If True, apply StandardScaler to numeric features (for linear/SVR models).
+        Tree models should set this to False.
+
+    Returns
+    -------
+    ColumnTransformer
+        Fitted-ready preprocessing transformer.
+    """
+    numeric_steps: list[tuple[str, object]] = [("imputer", SimpleImputer(strategy="median"))]
+    if scale_numeric:
+        numeric_steps.append(("scaler", StandardScaler()))
+
+    numeric_pipeline = Pipeline(steps=numeric_steps)
+
+    categorical_pipeline = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            (
+                "encoder",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+            ),
+        ]
     )
-    
-    print(f"Features matrix shape: {X.shape}")
-    print(f"Training split: {X_train.shape[0]} samples")
-    print(f"Testing split:  {X_test.shape[0]} samples")
-    
-    return X_train, X_test, y_train, y_test
+
+    transformers: list[tuple[str, Pipeline, list[str]]] = []
+    if numeric_features:
+        transformers.append(("num", numeric_pipeline, numeric_features))
+    if categorical_features:
+        transformers.append(("cat", categorical_pipeline, categorical_features))
+
+    return ColumnTransformer(transformers=transformers, remainder="drop")
+

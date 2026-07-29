@@ -5,10 +5,18 @@ from __future__ import annotations
 import pandas as pd
 
 # feature_engineering.py
-
-import pandas as pd
 import numpy as np
 
+def remove_columns(df: pd.DataFrame)->pd.DataFrame:
+    
+    # Drop leakage and identifier features
+    # 'casual' + 'registered' == 'cnt', which causes strict data leakage
+    # features_to_drop = ["instant", "dteday", "casual", "registered"]
+
+    features_to_drop = ["instant", "dteday", "casual", "registered","atemp"]
+    cleaned_df = df.drop(columns=[col for col in features_to_drop if col in df.columns])
+
+    return cleaned_df
 
 def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     """Extracts calendar-based features from the date column."""
@@ -16,8 +24,8 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     
     if "dteday" in df_out.columns:
         df_out["dteday"] = pd.to_datetime(df_out["dteday"], format="%d-%m-%Y")
-        df_out["day_of_month"] = df_out["dteday"].dt.day
-        df_out["quarter"] = df_out["dteday"].dt.quarter
+        # df_out["day_of_month"] = df_out["dteday"].dt.day
+        # df_out["quarter"] = df_out["dteday"].dt.quarter
         df_out["is_month_start"] = df_out["dteday"].dt.is_month_start.astype(int)
         df_out["is_month_end"] = df_out["dteday"].dt.is_month_end.astype(int)
         
@@ -82,9 +90,11 @@ def create_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     df_transformed = df.copy()
     
     # Run individual transformation functions
-    df_transformed = add_date_features(df_transformed)
-    df_transformed = add_weather_features(df_transformed)
-    df_transformed = add_cyclical_features(df_transformed)
     df_transformed = add_temperature_bins(df_transformed)
+    df_transformed = add_weather_features(df_transformed)
+
+    df_transformed = add_date_features(df_transformed)
+    df_transformed= remove_columns(df_transformed)
+    # df_transformed = add_cyclical_features(df_transformed)
     
     return df_transformed
