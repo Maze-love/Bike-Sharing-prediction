@@ -15,8 +15,9 @@ from sklearn.ensemble import (
     AdaBoostRegressor,
     ExtraTreesRegressor,
     GradientBoostingRegressor,
-    RandomForestRegressor,
+    RandomForestRegressor
 )
+# from xgboost import XGBRegressor
 from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -45,12 +46,17 @@ from src.util import (
     generate_data_understanding_report,
     load_and_explore_data,
     save_json,
+    plot_residuals,
+    plot_learning_curve,
+    plot_prediction_vs_actual,
+    plot_coefficients,
+    plot_feature_importance
 )
 
 # Models that benefit from feature scaling
-SCALED_MODELS = {"Linear Regression", "Ridge Regression", "Lasso Regression", "Support Vector Regressor"}
+SCALED_MODELS = {"Linear Regression", "Ridge Regression", "Lasso Regression", "Support Vector Regressor (SVR)"}
 
-TREE_MODELS = {"Decision Tree Regressor", "Random Forest Regressor", "Gradient Boosting Regressor"}
+TREE_MODELS = {"Decision Tree Regressor", "Random Forest Regressor", "Gradient Boosting Regressor","EXtra Trees", "AdaBoost"}
 LINEAR_MODELS = {"Linear Regression", "Ridge Regression", "Lasso Regression"}
 
 
@@ -59,15 +65,17 @@ LINEAR_MODELS = {"Linear Regression", "Ridge Regression", "Lasso Regression"}
 def get_model_registry() -> dict[str, Any]:
     """Return all 9 regression algorithms for bike rental estimation."""
     return {
+        
         "Linear Regression": LinearRegression(),
         "Ridge Regression": Ridge(alpha=1.0, random_state=42),
-        "Lasso Regression": Lasso(alpha=1.0, random_state=42, max_iter=5000),
-        "Decision Tree": DecisionTreeRegressor(random_state=42, max_depth=12),
-        "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1),
-        "Gradient Boosting": GradientBoostingRegressor(random_state=42),
+        "Lasso Regression": Lasso(alpha=0.5, random_state=42),
+        "Decision Tree Regressor": DecisionTreeRegressor(max_depth=8, random_state=42),
+        "Random Forest Regressor": RandomForestRegressor(n_estimators=300, max_depth=10, random_state=42, n_jobs=-1),
+        "Gradient Boosting Regressor": GradientBoostingRegressor(n_estimators=300, learning_rate=0.05, max_depth=3, random_state=42),
+        "Support Vector Regressor (SVR)": SVR(kernel="rbf", C=1000, epsilon=50),
         "Extra Trees": ExtraTreesRegressor(n_estimators=100, random_state=42, n_jobs=-1),
         "AdaBoost": AdaBoostRegressor(random_state=42),
-        "Support Vector Regressor": SVR(C=1000, epsilon=0.1),
+        # "XGBoost Regressor (Bonus)": XGBRegressor(n_estimators=300, learning_rate=0.05, max_depth=4, random_state=42, verbosity=0),
     }
 
 
@@ -78,6 +86,7 @@ def build_pipeline(
     model_name: str
 ) -> Pipeline:
     """Build full sklearn pipeline with dynamic feature scaling if required."""
+
     scale_numeric = model_name in SCALED_MODELS
     preprocessor = build_preprocessor(numeric_features, categorical_features, scale_numeric)
     return Pipeline(
@@ -106,6 +115,7 @@ def get_feature_names_from_pipeline(pipeline: Pipeline) -> list[str]:
 
 def prepare_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.DataFrame]:
     """Load, clean, engineer features, and perform train/test split."""
+    
     raw_df = load_and_explore_data()
     generate_data_understanding_report(raw_df)
 
@@ -155,10 +165,10 @@ def train_all_models(
         print(f"Training {model_name}...")
         pipeline = build_pipeline(estimator, numeric_features, categorical_features,model_name)
         
-
         metrics, fitted, y_pred = evaluate_model(
             pipeline, X_train, X_test, y_train, y_test, model_name
         )
+
         all_metrics.append(metrics)
         fitted_models[model_name] = fitted
         predictions[model_name] = y_pred
@@ -185,16 +195,16 @@ def train_all_models(
         learning_curves[model_name] = compute_learning_curve_data(lc_pipeline, X_train, y_train)
 
         # # Bonus plots
-        # plot_residuals(y_test.values, y_pred, model_name)
-        # plot_prediction_vs_actual(y_test.values, y_pred, model_name)
-        # plot_learning_curve(learning_curves[model_name], model_name)
+        plot_residuals(y_test.values, y_pred, model_name)
+        plot_prediction_vs_actual(y_test.values, y_pred, model_name)
+        plot_learning_curve(learning_curves[model_name], model_name)
 
         # Feature importance / coefficients
-        # feature_names = get_feature_names_from_pipeline(fitted)
-        # if model_name in TREE_MODELS:
-        #     plot_feature_importance(fitted, feature_names, model_name)
-        # elif model_name in LINEAR_MODELS:
-        #     plot_coefficients(fitted, feature_names, model_name)
+        feature_names = get_feature_names_from_pipeline(fitted)
+        if model_name in TREE_MODELS:
+            plot_feature_importance(fitted, feature_names, model_name)
+        elif model_name in LINEAR_MODELS:
+            plot_coefficients(fitted, feature_names, model_name)
 
     metrics_df = pd.DataFrame(all_metrics)
     save_comparison_results(metrics_df)
@@ -244,7 +254,7 @@ def run_training_pipeline() -> dict[str, Any]:
     """Execute complete end-to-end training process."""
     X_train, X_test, y_train, y_test, engineered_df = prepare_data()
 
-    metrics_df, fitted_models = train_all_models(X_train, X_test, y_train, y_test)
+    metrics_df, fitted_models,predictions = train_all_models(X_train, X_test, y_train, y_test)
 
     best_model_name = select_best_model(metrics_df)
     generate_comparison_report(metrics_df, best_model_name)

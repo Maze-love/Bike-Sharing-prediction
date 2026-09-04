@@ -15,7 +15,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 # Machine Learning utilities
 from sklearn.model_selection import train_test_split
 
-from src.util import TARGET_COLUMN
+from src.util import TARGET_COLUMN,SCALED_COLUMN
 
 
 def trim_whitespace(df: pd.DataFrame) -> pd.DataFrame:
@@ -77,10 +77,11 @@ def get_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
         c for c in feature_cols if c not in numeric_features
     ]
 
-    print("******from get_features_columns********")
-    print(feature_cols)
-    print(numeric_features)
-    print(categorical_features)
+    # print("******from get_features_columns********")
+    # print(len(feature_cols))
+    # print(feature_cols)
+    # print(numeric_features)
+    # print(categorical_features)
 
     return numeric_features, categorical_features
 
@@ -143,6 +144,10 @@ def build_preprocessor(
 
     transformers: list[tuple[str, Pipeline, list[str]]] = []
     if numeric_features:
+        # selected_numerical_features= [item for item in numeric_features if (not(item in SCALED_COLUMN))]
+        # print("from build preprocessor")
+        # print(selected_numerical_features)
+
         transformers.append(("num", numeric_pipeline, numeric_features))
     if categorical_features:
         transformers.append(("cat", categorical_pipeline, categorical_features))

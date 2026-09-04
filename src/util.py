@@ -16,7 +16,10 @@ import time
 import joblib
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 import seaborn as sns
 
 
@@ -48,6 +51,8 @@ METRICS_DIR = OUTPUTS_DIR / "metrics"
 REPORTS_DIR = OUTPUTS_DIR / "reports"
 
 TARGET_COLUMN = "cnt"
+SCALED_COLUMN= ['holiday','workingday','mnth_sin',
+                'mnth_cos','weekday_sin','weekday_cos','is_month_end','is_month_start']
 
 # =============================================================================
 # 1. DATA LOADING & EXPLORATORY DATA ANALYSIS (EDA)
@@ -176,81 +181,127 @@ def plot_scatter_plots(df: pd.DataFrame, output_dir: str = FIGURES_DIR):
     plt.show()
     print(f"[INFO] Scatter plots saved to '{plot_path}'")
 
+def plot_coefficients(
+    model: Any,
+    feature_names: list[str],
+    model_name: str,
+) -> Path | None:
+    """Plot coefficients for linear models."""
+    estimator = model.named_steps.get("regressor", model)
+    if not hasattr(estimator, "coef_"):
+        return None
 
+    coefs = np.abs(estimator.coef_.ravel())
+    indices = np.argsort(coefs)[::-1][:20]
+    top_names = [feature_names[i] for i in indices]
+    top_values = estimator.coef_.ravel()[indices]
 
-# =============================================================================
-# 3. MODEL TRAINING & COMPARISON
-# =============================================================================
-# def train_and_evaluate_models(X_train, X_test, y_train, y_test):
-#     """
-#     Trains and evaluates 9 regression models, returning comparative performance metrics.
-#     """
-#     print("\n" + "=" * 60)
-#     print("STEP 3: TRAINING MULTIPLE REGRESSION MODELS")
-#     print("=" * 60)
-    
-#     # Scale continuous features for distance/gradient based algorithms
-#     scaler = StandardScaler()
-#     X_train_scaled = scaler.fit_transform(X_train)
-#     X_test_scaled = scaler.transform(X_test)
-
-#     # Dictionary of 9 algorithms (meets & exceeds 7 model baseline)
-#     models = {
-#         "Linear Regression": (LinearRegression(), True),
-#         "Ridge Regression": (Ridge(alpha=1.0), True),
-#         "Lasso Regression": (Lasso(alpha=1.0), True),
-#         "Decision Tree": (DecisionTreeRegressor(random_state=42), False),
-#         "Random Forest": (RandomForestRegressor(n_estimators=100, random_state=42), False),
-#         "Gradient Boosting": (GradientBoostingRegressor(random_state=42), False),
-#         "Extra Trees": (ExtraTreesRegressor(n_estimators=100, random_state=42), False),
-#         "AdaBoost": (AdaBoostRegressor(random_state=42), False),
-#         "Support Vector Regressor": (SVR(C=1000, epsilon=0.1), True)
-#     }
-
-#     results = []
-
-#     for name, (model, requires_scaling) in models.items():
-#         start_time = time.time()
-        
-#         # Fit model on appropriately prepared data
-#         if requires_scaling:
-#             model.fit(X_train_scaled, y_train)
-#             y_pred = model.predict(X_test_scaled)
-#         else:
-#             model.fit(X_train, y_train)
-#             y_pred = model.predict(X_test)
-            
-#         elapsed_time = time.time() - start_time
-        
-#         # Calculate Regression Metrics
-#         mae = mean_absolute_error(y_test, y_pred)
-#         mse = mean_squared_error(y_test, y_pred)
-#         rmse = np.sqrt(mse)
-#         r2 = r2_score(y_test, y_pred)
-        
-#         results.append({
-#             "Algorithm Name": name,
-#             "Training Time (s)": round(elapsed_time, 4),
-#             "MAE": round(mae, 2),
-#             "MSE": round(mse, 2),
-#             "RMSE": round(rmse, 2),
-#             "R2 Score": round(r2, 4)
-#         })
-
-#     comparison_df = pd.DataFrame(results).sort_values(by="R2 Score", ascending=False)
-#     print("\nModel Performance Comparison Table:")
-#     print(comparison_df.to_string(index=False))
-    
-#     return comparison_df, scaler
-
-
-
-
-# untested functions...
-def save_markdown(content: str, path: Path) -> None:
-    """Write markdown content to disk."""
+    plt.figure(figsize=(10, 8))
+    colors = ["green" if v >= 0 else "red" for v in top_values]
+    plt.barh(top_names, top_values, color=colors)
+    plt.gca().invert_yaxis()
+    plt.title(f"Top Coefficients — {model_name}")
+    plt.xlabel("Coefficient Value")
+    safe_name = model_name.lower().replace(" ", "_")
+    path = FIGURES_DIR / "evaluation" / f"coefficients{safe_name}.png"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    plt.tight_layout()
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+    return path
+
+def plot_feature_importance(
+    model: Any,
+    feature_names: list[str],
+    model_name: str,
+) -> Path | None:
+    """Plot feature importance for tree-based models."""
+    estimator = model.named_steps.get("regressor", model)
+    if not hasattr(estimator, "feature_importances_"):
+        return None
+
+    importances = estimator.feature_importances_
+    indices = np.argsort(importances)[::-1][:20]
+    top_names = [feature_names[i] for i in indices]
+    top_values = importances[indices]
+
+    plt.figure(figsize=(10, 8))
+    sns.barplot(x=top_values, y=top_names, orient="h")
+    plt.title(f"Feature Importance — {model_name}")
+    plt.xlabel("Importance")
+    safe_name = model_name.lower().replace(" ", "_")
+    path = FIGURES_DIR / "evaluation" / f"feature_importance{safe_name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+    return path
+
+
+# additional plots
+def plot_residuals(y_true: np.ndarray, y_pred: np.ndarray, model_name: str) -> Path:
+    """Plot residual distribution and residuals vs predicted."""
+    residuals = y_true - y_pred
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    sns.histplot(residuals, kde=True, ax=axes[0])
+    axes[0].set_title(f"Residual Distribution — {model_name}")
+    axes[0].set_xlabel("Residual ($)")
+
+    sns.scatterplot(x=y_pred, y=residuals, alpha=0.4, ax=axes[1])
+    axes[1].axhline(0, color="red", linestyle="--")
+    axes[1].set_title(f"Residuals vs Predicted — {model_name}")
+    axes[1].set_xlabel("Predicted Price ($)")
+    axes[1].set_ylabel("Residual ($)")
+
+    ensure_output_dirs()
+    safe_name = model_name.lower().replace(" ", "_")
+    path = FIGURES_DIR / "evaluation" / f"residuals_{safe_name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def plot_prediction_vs_actual(y_true: np.ndarray, y_pred: np.ndarray, model_name: str) -> Path:
+    """Plot predicted vs actual values."""
+    plt.figure(figsize=(8, 8))
+    sns.scatterplot(x=y_true, y=y_pred, alpha=0.4)
+    min_val = min(y_true.min(), y_pred.min())
+    max_val = max(y_true.max(), y_pred.max())
+    plt.plot([min_val, max_val], [min_val, max_val], "r--", label="Perfect prediction")
+    plt.xlabel("Actual Price ($)")
+    plt.ylabel("Predicted Price ($)")
+    plt.title(f"Predicted vs Actual — {model_name}")
+    plt.legend()
+    safe_name = model_name.lower().replace(" ", "_")
+    path = FIGURES_DIR / "evaluation" / f"pred_vs_actual{safe_name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+    return path
+
+
+def plot_learning_curve(scores: dict[str, list[float]], model_name: str) -> Path:
+    """Plot learning curve from cross-validation scores."""
+    plt.figure(figsize=(10, 6))
+    train_sizes = scores.get("train_sizes", list(range(1, len(scores["train_scores"]) + 1)))
+    plt.plot(train_sizes, scores["train_scores"], label="Train R²", marker="o")
+    plt.plot(train_sizes, scores["val_scores"], label="Validation R²", marker="o")
+    plt.xlabel("Training Set Size")
+    plt.ylabel("R² Score")
+    plt.title(f"Learning Curve — {model_name}")
+    plt.legend()
+    safe_name = model_name.lower().replace(" ", "_")
+    path = FIGURES_DIR / "evaluation" / f"learning_curve{safe_name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(path, bbox_inches="tight")
+    plt.close()
+    return path
+
 
 
 def inspect_dataset(df: pd.DataFrame) -> dict[str, Any]:
@@ -347,6 +398,12 @@ def generate_data_understanding_report(df: pd.DataFrame, output_path: Path | Non
     return content
 
 
+
+# untested functions...
+def save_markdown(content: str, path: Path) -> None:
+    """Write markdown content to disk."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
 
 
 

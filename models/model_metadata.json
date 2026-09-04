@@ -1,0 +1,4 @@
+{
+  "model_name": "Random Forest Regressor",
+  "target_column": "cnt"
+}

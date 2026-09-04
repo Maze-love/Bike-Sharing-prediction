@@ -1,0 +1,89 @@
+{
+  "best_model": "Random Forest Regressor",
+  "model_path": "C:\\Users\\Abi\\Desktop\\bike-sharing-prediction\\models\\best_model.pkl",
+  "n_train": 584,
+  "n_test": 146,
+  "metrics": [
+    {
+      "mae": 575.3498206923294,
+      "mse": 547156.3587024696,
+      "rmse": 739.7001816293339,
+      "r2": 0.8401455971961393,
+      "train_time_sec": 0.11621899999954621,
+      "predict_time_sec": 0.004710099998192163,
+      "model": "Linear Regression"
+    },
+    {
+      "mae": 574.933130861547,
+      "mse": 546681.1474266103,
+      "rmse": 739.3788930085916,
+      "r2": 0.8402844324915717,
+      "train_time_sec": 0.05395739999949001,
+      "predict_time_sec": 0.008215999998355983,
+      "model": "Ridge Regression"
+    },
+    {
+      "mae": 575.0266390997613,
+      "mse": 546676.1861575186,
+      "rmse": 739.3755379761483,
+      "r2": 0.8402858819505703,
+      "train_time_sec": 0.030412599997362122,
+      "predict_time_sec": 0.011696500001562526,
+      "model": "Lasso Regression"
+    },
+    {
+      "mae": 539.5643354886317,
+      "mse": 518133.2486227609,
+      "rmse": 719.8147321517954,
+      "r2": 0.8486248405705645,
+      "train_time_sec": 0.03134100000170292,
+      "predict_time_sec": 0.011670799998682924,
+      "model": "Decision Tree Regressor"
+    },
+    {
+      "mae": 413.9295949273445,
+      "mse": 294094.9947973384,
+      "rmse": 542.3052597913268,
+      "r2": 0.9140787107502167,
+      "train_time_sec": 0.706871599999431,
+      "predict_time_sec": 0.10840779999853112,
+      "model": "Random Forest Regressor"
+    },
+    {
+      "mae": 431.4142468564769,
+      "mse": 312778.1806954948,
+      "rmse": 559.2657514058006,
+      "r2": 0.9086203267312396,
+      "train_time_sec": 0.5725477999985742,
+      "predict_time_sec": 0.005387700002756901,
+      "model": "Gradient Boosting Regressor"
+    },
+    {
+      "mae": 414.78900352674066,
+      "mse": 312607.579223029,
+      "rmse": 559.1132078774647,
+      "r2": 0.9086701687847307,
+      "train_time_sec": 0.08753950000027544,
+      "predict_time_sec": 0.02648600000247825,
+      "model": "Support Vector Regressor (SVR)"
+    },
+    {
+      "mae": 418.9652739726028,
+      "mse": 323458.9246527397,
+      "rmse": 568.7344939888382,
+      "r2": 0.905499895213574,
+      "train_time_sec": 0.2567421999992803,
+      "predict_time_sec": 0.046961199997895164,
+      "model": "Extra Trees"
+    },
+    {
+      "mae": 628.387534201442,
+      "mse": 615647.2444235745,
+      "rmse": 784.6319165211,
+      "r2": 0.8201356503860205,
+      "train_time_sec": 0.2380254000017885,
+      "predict_time_sec": 0.03232179999758955,
+      "model": "AdaBoost"
+    }
+  ]
+}

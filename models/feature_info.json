@@ -1,0 +1,25 @@
+{
+  "all_features": [
+    "season",
+    "yr",
+    "mnth",
+    "holiday",
+    "workingday",
+    "weathersit",
+    "temp",
+    "hum",
+    "windspeed"
+  ],
+  "numeric_features": [
+    "season",
+    "yr",
+    "mnth",
+    "holiday",
+    "workingday",
+    "weathersit",
+    "temp",
+    "hum",
+    "windspeed"
+  ],
+  "best_model": "Random Forest Regressor"
+}
