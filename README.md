@@ -3,7 +3,7 @@
 **Course:** Intelligent AI and Data Engineering
 **Assignment:** Model Comparison, Regression Prediction, and Web Application
 **Group:** 5
-**Dataset:** Bike Sharing Demand (`day.csv`) — UCI Machine Learning Repository
+**Dataset:** Bike Sharing Demand (`day.csv`) — Kaggle Dataset
 **Target Variable:** `cnt` (total daily bike rentals)
 
 ## 📌 Business Problem
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 ## ▶️ Run the Notebook
 
 ```bash
-jupyter notebook notebook/Group5_Bike_Sharing_Regression.ipynb
+jupyter notebook notebooks/bsp.ipynb
 ```
 
 ## ▶️ Run the Web Application
@@ -52,6 +52,8 @@ streamlit run app/app.py
 ```
 
 Then open the local URL Streamlit prints (default: http://localhost:8501).
+
+Deployed:- https://bike-sharing-prediction-9pm2dj3dhhphgedhr9kkij.streamlit.app/
 
 ## 🧠 Machine Learning Workflow
 
@@ -75,8 +77,6 @@ The best model was selected by highest R² Score on the held-out test set (20% s
 cross-validated with 5-fold CV.
 
 ## 👥 Team — Group 5
-
-_Add group member names and roles here before submission._
 
 ## 📄 License
 
